@@ -17,159 +17,7 @@
 #include "vgfx.h"
 #include "vuser.h"
 
-typedef struct VCIFileHead {
-	UINT32 width;
-	UINT32 height;
-} VCIFileHead, *pVCIFileHead;
-
-static void makeVCIFile(void) {
-	printf("File to load: ");
-
-	// get user input for file
-	PCHAR inputBuff = vAllocZeroed(BUFF_LARGE);
-	gets_s(inputBuff, BUFF_LARGE);
-
-	// attempt to load file
-	// on false, re-prompt
-	if (vFileExists(inputBuff) == FALSE) {
-		printf("Error loading file %s.\n", inputBuff);
-		return;
-	}
-
-	// open file
-	printf("Loading file %s...\n", inputBuff);
-	HANDLE imgFileHndl = vFileOpen(inputBuff);
-
-	// copy file to memory
-	vUI64 fileSize = vFileSize(imgFileHndl);
-	PBYTE imgData = vAllocZeroed(fileSize);
-	vFileRead(imgFileHndl, 0, fileSize, imgData);
-
-	// close file and free input buffer
-	vFileClose(imgFileHndl);
-
-	// get stb to parse
-	printf("Parsing image...\n");
-	stbi_set_flip_vertically_on_load(TRUE);
-	INT width, height, channels;
-	PBYTE parsedImgDat =
-		stbi_load_from_memory(imgData, fileSize,
-			&width, &height, &channels, STBI_rgb_alpha);
-	printf("Image parsed successfully.\n");
-	printf("Image params:\n\tWidth: %d\n\tHeight: %d\n",
-		width, height);
-
-	// prompt output file name
-	printf("Filename to Output: ");
-	gets_s(inputBuff, BUFF_LARGE);
-
-	// add file extension to the end
-	strcat_s(inputBuff, BUFF_LARGE, ".vci");
-
-	// create compressor
-	COMPRESSOR_HANDLE compObj;
-	CreateCompressor(COMPRESS_ALGORITHM_XPRESS_HUFF, NULL,
-		&compObj);
-
-	// compress parsed image
-	PBYTE compressedImgDat =
-		vAllocZeroed(width * height * 4);
-	SIZE_T compressedImgSize;
-	printf("Compressing Data...\n");
-	Compress(compObj, parsedImgDat, width * height * 4,
-		compressedImgDat, width * height * 4, &compressedImgSize);
-	CloseCompressor(compObj);
-
-	printf("Writing file...\n");
-
-	// write to file and close
-	HANDLE fileOut = vFileCreate(inputBuff);
-
-	VCIFileHead fileHeader;
-	fileHeader.width = width;
-	fileHeader.height = height;
-
-	// write file header
-	vFileWrite(fileOut, ZERO, sizeof(VCIFileHead), &fileHeader);
-
-	// write compressed data
-	vFileWrite(fileOut, sizeof(VCIFileHead), compressedImgSize,
-		compressedImgDat);
-	vFileClose(fileOut);
-	printf("File written sucessfully as %s\n",
-		inputBuff);
-
-	// free all data
-	vFree(compressedImgDat);
-	vFree(imgData);
-	vFree(inputBuff);
-}
-
-static void loadVCIFileToBinary(void) {
-	printf("File to load: ");
-
-	// get user input for file
-	PCHAR inputBuff = vAllocZeroed(BUFF_LARGE);
-	gets_s(inputBuff, BUFF_LARGE);
-
-	// attempt to load file
-	// on false, re-prompt
-	if (vFileExists(inputBuff) == FALSE) {
-		printf("Error loading file %s.\n", inputBuff);
-		return;
-	}
-
-	// open file
-	printf("Loading file %s...\n", inputBuff);
-	HANDLE compImgFileHndl = vFileOpen(inputBuff);
-
-	// copy file to memory
-	vUI64 fileSize = vFileSize(compImgFileHndl);
-	PBYTE compData = vAllocZeroed(fileSize);
-	vFileRead(compImgFileHndl, 0, fileSize, compData);
-
-	// close file and free input buffer
-	vFileClose(compImgFileHndl);
-
-	printf("File loaded.\n");
-
-	// get decompress size and make decompress buffer
-	VCIFileHead headInfo;
-	vMemCopy(&headInfo, compData, sizeof(VCIFileHead));
-	PBYTE decompBuffer =
-		vAllocZeroed(headInfo.width * headInfo.height * 4);
-
-	// decompress
-	printf("Decompressing...\n");
-	SIZE_T decompSize;
-	DECOMPRESSOR_HANDLE decompObj;
-	CreateDecompressor(COMPRESS_ALGORITHM_XPRESS_HUFF, NULL,
-		&decompObj);
-	Decompress(decompObj, compData + sizeof(VCIFileHead), fileSize - sizeof(VCIFileHead), 
-		decompBuffer, headInfo.width * headInfo.height * 4, &decompSize);
-	printf("Decompression completed.\n");
-
-	// output again
-	// prompt output file name
-	printf("Filename to Output: ");
-	gets_s(inputBuff, BUFF_LARGE);
-
-	// add file extension to the end
-	strcat_s(inputBuff, BUFF_LARGE, ".bin");
-
-	// write compressed data
-	HANDLE binFileHndl =
-		vFileCreate(inputBuff);
-	vFileWrite(binFileHndl, 0, decompSize,
-		decompBuffer);
-	vFileClose(binFileHndl);
-	printf("File written sucessfully as %s\n",
-		inputBuff);
-
-	vFree(compData);
-	vFree(decompBuffer);
-	vFree(inputBuff);
-}
+#define SAVED_DIR_FILEPATH "lastdir.txt"
 
 typedef struct TButton {
 	vPUPanel background;
@@ -237,7 +85,17 @@ int main(int argc, char** argv) {
 	// file output directory
 	char _outDirPath[BUFF_MASSIVE];
 	vZeroMemory(_outDirPath, sizeof(_outDirPath));
-	GetCurrentDirectoryA(MAX_PATH, _outDirPath);
+
+	// load last directory (if exists)
+	if (vFileExists(SAVED_DIR_FILEPATH)) {
+		HANDLE dirFile = vFileOpen(SAVED_DIR_FILEPATH);
+		vFileRead(dirFile, 0, vFileSize(dirFile), _outDirPath);
+		vFileClose(dirFile);
+	}
+	else
+	{
+		GetCurrentDirectoryA(MAX_PATH, _outDirPath);
+	}
 
 	// generate dirpanel string
 	char _dirPanelStr[BUFF_MASSIVE];
@@ -292,10 +150,21 @@ int main(int argc, char** argv) {
 			LPITEMIDLIST itemID = SHBrowseForFolderA(&browseInfo);
 
 			// get new full path
-			BOOL rslt = SHGetPathFromIDListA(itemID, _outDirPath);
+			CHAR tempDirBuff[MAX_PATH];
+			vZeroMemory(tempDirBuff, MAX_PATH);
+			BOOL rslt = SHGetPathFromIDListA(itemID, tempDirBuff);
 
 			// free item ID
 			CoTaskMemFree(itemID);
+
+			// if no new path, quit ignore
+			if (tempDirBuff[0] == NULL) continue;
+
+			// update output dir and save
+			sprintf_s(_outDirPath, BUFF_MASSIVE, "%s", tempDirBuff);
+			HANDLE savedWriteFile = vFileCreate(SAVED_DIR_FILEPATH);
+			vFileWrite(savedWriteFile, 0, strlen(tempDirBuff), tempDirBuff);
+			vFileClose(savedWriteFile);
 
 			// update dirpanel string
 			vUPanelTextLock(directory);
@@ -431,6 +300,15 @@ int main(int argc, char** argv) {
 						vUCreateRectCenteredOffset(
 							vCreatePosition(0, -0.25f), 0.75f * aspect, 0.75f),
 						previewSkin);
+
+				// sync so that image can be seen
+				vWorkerWaitCycleCompletion(
+					vGGetInternals()->workerThread,
+					vWorkerGetCycle(vGGetInternals()->workerThread),
+					0xFF
+				);
+
+				// free resources
 				vUDestroyPanel(previewPanel);
 				vGDestroySkin(previewSkin);
 
