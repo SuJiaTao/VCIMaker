@@ -30,26 +30,27 @@ PTButton CreatePTButton(vPUPanelStyle guiStyle, vGRect rect,
 
 	ptbutton->text =
 		vUCreatePanelText(guiStyle, rect, vUPanelTextFormat_CenteredComplete,
-			text);
+			tSize, text);
 	ptbutton->background =
 		vUCreatePanelButton(guiStyle, rect, NULL);
-	ptbutton->text->textSize = tSize;
 
 	return ptbutton;
 }
 
 int main(int argc, char** argv) {
-	//FreeConsole(); // disable window
+	FreeConsole();
 	HRESULT initRslt = CoInitialize(NULL);
 
 	// init libraries
 	vCoreInitialize();
 	vGInitializeData gInitDat;
-	gInitDat.targetFrameRate = 45;
+	gInitDat.targetFrameRate = 120;
 	gInitDat.windowName = "VCI Maker";
 	gInitDat.windowWidth  = 1000;
 	gInitDat.windowHeight = 700;
 	vGInitialize(&gInitDat);
+	vGSetWindowResizable(FALSE);
+	vGSetWindowMaximizeable(FALSE);
 	vUInitialize();
 
 	// init GUI style
@@ -79,8 +80,7 @@ int main(int argc, char** argv) {
 	vPUPanel title =
 		vUCreatePanelText(GUIStyle,
 			vUCreateRectCenteredOffset(vCreatePosition(0, 0.7f), 2, 0.5f), 
-			vUPanelTextFormat_Centered, "VCI MAKER");
-	title->textSize = 0.15f;
+			vUPanelTextFormat_Centered, 0.15f, "VCI MAKER");
 
 	// file output directory
 	char _outDirPath[BUFF_MASSIVE];
@@ -105,8 +105,7 @@ int main(int argc, char** argv) {
 	vPUPanel directory =
 		vUCreatePanelText(GUIStyle,
 			vUCreateRectCenteredOffset(vCreatePosition(0, 0.55f), 2, 0.5f),
-			vUPanelTextFormat_Centered, _dirPanelStr);
-	directory->textSize = 0.05f;
+			vUPanelTextFormat_Centered, 0.05f, _dirPanelStr);
 
 	PTButton changeDirButton =
 		CreatePTButton(
@@ -131,6 +130,8 @@ int main(int argc, char** argv) {
 			"Compile Files",
 			0.07f
 		);
+
+
 
 	// main loop
 	while (vGShouldExit() == FALSE) {
@@ -243,8 +244,8 @@ int main(int argc, char** argv) {
 				vPUPanel progressDialougePanel
 					= vUCreatePanelText(GUIStyle, progressDialougeRect,
 						vUPanelTextFormat_CenteredComplete,
+						0.05f,
 						progressDialougeTextBuff);
-				progressDialougePanel->textSize = 0.05f;
 
 				// load file (and create dialouge)
 				vUPanelTextLock(progressDialougePanel);
