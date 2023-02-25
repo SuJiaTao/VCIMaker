@@ -133,7 +133,7 @@ int main(int argc, char** argv) {
 		);
 
 	// main loop
-	while (vGExited() == FALSE) {
+	while (vGShouldExit() == FALSE) {
 
 		// CHANGE DIR HANDLER
 		if (vUIsMouseClickingPanel(changeDirButton->background)) {
@@ -318,11 +318,7 @@ int main(int argc, char** argv) {
 						previewSkin);
 
 				// sync so that image can be seen
-				vWorkerWaitCycleCompletion(
-					vGGetInternals()->workerThread,
-					vWorkerGetCycle(vGGetInternals()->workerThread),
-					0xFF
-				);
+				vGSync();
 
 				// free resources
 				vUDestroyPanel(previewPanel);
@@ -342,4 +338,6 @@ int main(int argc, char** argv) {
 
 		Sleep(1); // pause to regulate thread
 	}
+
+	vGExit();
 }
