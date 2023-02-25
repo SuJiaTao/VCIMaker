@@ -216,6 +216,17 @@ int main(int argc, char** argv) {
 			NULL
 		);
 
+	// init preview style
+	vPUPanelStyle previewStyle = vUCreatePanelStyle(
+		vGCreateColorB(255, 255, 255, 255),
+		vGCreateColorB(0, 0, 0, 255),
+		vGCreateColorB(VGFX_COLOR_3b, 255),
+		0.010f,
+		0.01f,
+		-0.015f,
+		NULL
+	);
+
 	// make title
 	vPUPanel title =
 		vUCreatePanelText(GUIStyle,
@@ -224,12 +235,12 @@ int main(int argc, char** argv) {
 	title->textSize = 0.15f;
 
 	// file output directory
-	char _outDirPath[MAX_PATH];
+	char _outDirPath[BUFF_MASSIVE];
 	vZeroMemory(_outDirPath, sizeof(_outDirPath));
 	GetCurrentDirectoryA(MAX_PATH, _outDirPath);
 
 	// generate dirpanel string
-	char _dirPanelStr[MAX_PATH + BUFF_MEDIUM];
+	char _dirPanelStr[BUFF_MASSIVE];
 	sprintf_s(_dirPanelStr, sizeof(_dirPanelStr), "Output dir:\n%s", _outDirPath);
 
 	// make directory pannel
@@ -299,8 +310,8 @@ int main(int argc, char** argv) {
 			ZeroMemory(&fopenOptions, sizeof(OPENFILENAMEA));
 			fopenOptions.lStructSize = sizeof(fopenOptions);
 			fopenOptions.hwndOwner = vGGetInternals()->window.window;
-			fopenOptions.lpstrFile = vAllocZeroed(BUFF_MASSIVE);
-			fopenOptions.nMaxFile  = BUFF_MASSIVE;
+			fopenOptions.lpstrFile = vAllocZeroed(0x2000);
+			fopenOptions.nMaxFile  = 0x2000;
 			fopenOptions.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR |
 				OFN_EXPLORER | OFN_ALLOWMULTISELECT;
 			fopenOptions.lpstrFilter = TEXT("All files(*.*)\0*.*\0\0");
@@ -311,10 +322,11 @@ int main(int argc, char** argv) {
 			// parse files
 			// files[0] is "root folder"
 			// all the rest are filenames
-			PCHAR files[BUFF_MEDIUM];
+			PCHAR files[BUFF_MASSIVE];
 			INT fileCount = 0;
 			INT strWalk = 0;
 			while (TRUE) {
+				if (strWalk > 0x2000) break; // safeguard
 				files[fileCount] = fopenOptions.lpstrFile + strWalk;
 				strWalk += strlen(files[fileCount]) + 1;
 				fileCount++;
@@ -345,8 +357,6 @@ int main(int argc, char** argv) {
 						files[0]
 					);
 				}
-
-				printf("loadpath: %s\n", loadPath);
 
 				PCHAR progressDialougeTextBuff =
 					vAllocZeroed(BUFF_MASSIVE);
@@ -381,7 +391,6 @@ int main(int argc, char** argv) {
 				// if SINGLE file, change filename to have correct
 				// output
 				if (fileCount == 1) {
-					puts("reached");
 					// update filename to only be last part
 					int pathlen = strlen(files[0]);
 					for (int j = 0; j < pathlen; j++) {
@@ -409,8 +418,21 @@ int main(int argc, char** argv) {
 					_outDirPath,
 					files[i]
 				);
-				printf("outpath: %s\n", pathOut);
 				vFree(fileNameWithoutExtension);
+
+				// generate vci files
+				vGMakeVCI(pathOut, width, height, parsedImg);
+
+				// preview VCI files
+				vPGSkin previewSkin = vGCreateSkinFromVCI(pathOut, FALSE, 0);
+				float aspect = (float)previewSkin->width / (float)previewSkin->height;
+				vPUPanel previewPanel =
+					vUCreatePanelRect(previewStyle,
+						vUCreateRectCenteredOffset(
+							vCreatePosition(0, -0.25f), 0.75f * aspect, 0.75f),
+						previewSkin);
+				vUDestroyPanel(previewPanel);
+				vGDestroySkin(previewSkin);
 
 				// free img
 				stbi_image_free(parsedImg);
@@ -420,6 +442,8 @@ int main(int argc, char** argv) {
 				vFree(progressDialougeTextBuff);
 				vFree(loadPath);
 			}
+
+			vFree(fopenOptions.lpstrFile);
 		}
 
 		Sleep(1); // pause to regulate thread
