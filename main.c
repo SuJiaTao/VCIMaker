@@ -79,7 +79,10 @@ int main(int argc, char** argv) {
 	// make title
 	vPUPanel title =
 		vUCreatePanelText(GUIStyle,
-			vUCreateRectCenteredOffset(vCreatePosition(0, 0.7f), 2, 0.5f), 
+			vUCreateRectAlignedBorder(
+				vURectAlignment_Top,
+				vGCreateRectCentered(0.15f, 0.15f),
+				0.05f),
 			vUPanelTextFormat_Centered, 0.15f, "VCI MAKER");
 
 	// file output directory
@@ -104,26 +107,30 @@ int main(int argc, char** argv) {
 	// make directory pannel
 	vPUPanel directory =
 		vUCreatePanelText(GUIStyle,
-			vUCreateRectCenteredOffset(vCreatePosition(0, 0.55f), 2, 0.5f),
+			vUCreateRectAlignedOut(
+				title->boundingBox,
+				vURectAlignment_Top,
+				vGCreateRectCentered(0.05f, 0.05f),
+				0.02f),
 			vUPanelTextFormat_Centered, 0.05f, _dirPanelStr);
 
 	PTButton changeDirButton =
 		CreatePTButton(
 			GUIStyle,
 			vUCreateRectCenteredOffset(
-				vCreatePosition(-0.75f, 0.45f),
-				0.75f,
+				vCreatePosition(-0.6f, 0.45f),
+				1.00f,
 				0.25f
 			),
 			"Change Dir",
-			0.07f
+			0.07fs
 		);
 
 	PTButton compileFilesButton =
 		CreatePTButton(
 			GUIStyle,
 			vUCreateRectCenteredOffset(
-				vCreatePosition(0.45f, 0.45f),
+				vCreatePosition(0.6f, 0.45f),
 				1.00f,
 				0.25f
 			),
