@@ -188,6 +188,13 @@ int main(int argc, char** argv) {
 			fopenOptions.nFilterIndex = 1;
 			BOOL option = GetOpenFileNameA(&fopenOptions);
 
+			// check for nothing selected
+			if (option == FALSE) {
+				vFree(fopenOptions.lpstrFile);
+				continue;
+			}
+
+
 			// parse files
 			// files[0] is "root folder"
 			// all the rest are filenames
@@ -256,6 +263,15 @@ int main(int argc, char** argv) {
 						&components,
 						4
 					);
+
+				// if parse FAILED, skip
+				if (parsedImg == NULL) {
+					vFree(progressDialougeTextBuff);
+					vUDestroyPanel(progressDialougePanel);
+					vLogErrorFormatted(__func__, "Failed to compile file %s.\n",
+						files[i]);
+					continue;
+				}
 
 				// if SINGLE file, change filename to have correct
 				// output
