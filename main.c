@@ -30,7 +30,7 @@ PTButton CreatePTButton(vPUPanelStyle guiStyle, vGRect rect,
 
 	ptbutton->text =
 		vUCreatePanelText(guiStyle, rect, vUPanelTextFormat_CenteredComplete,
-			tSize, text);
+			tSize, text, FALSE);
 	ptbutton->background =
 		vUCreatePanelButton(guiStyle, rect, NULL, NULL);
 
@@ -38,7 +38,7 @@ PTButton CreatePTButton(vPUPanelStyle guiStyle, vGRect rect,
 }
 
 int main(int argc, char** argv) {
-	FreeConsole();
+	//FreeConsole();
 	HRESULT initRslt = CoInitialize(NULL);
 
 	// init libraries
@@ -72,7 +72,8 @@ int main(int argc, char** argv) {
 				vURectAlignment_Top,
 				vGCreateRectCentered(0.15f, 0.15f),
 				0.05f),
-			vUPanelTextFormat_Centered, 0.15f, "VCI MAKER");
+			vUPanelTextFormat_Centered, 0.15f, "VCI MAKER", FALSE);
+	//title->textBackGround = TRUE;
 
 	// file output directory
 	char _outDirPath[BUFF_MASSIVE];
@@ -101,7 +102,7 @@ int main(int argc, char** argv) {
 				vURectAlignment_Top,
 				vGCreateRectCentered(0.05f, 0.05f),
 				0.02f),
-			vUPanelTextFormat_Centered, 0.05f, _dirPanelStr);
+			vUPanelTextFormat_Centered, 0.05f, _dirPanelStr, FALSE);
 
 	PTButton changeDirButton =
 		CreatePTButton(
@@ -241,7 +242,7 @@ int main(int argc, char** argv) {
 					= vUCreatePanelText(GUIStyle, progressDialougeRect,
 						vUPanelTextFormat_CenteredComplete,
 						0.05f,
-						progressDialougeTextBuff);
+						progressDialougeTextBuff, FALSE);
 
 				// load file (and create dialouge)
 				vUPanelTextLock(progressDialougePanel);
