@@ -32,7 +32,7 @@ PTButton CreatePTButton(vPUPanelStyle guiStyle, vGRect rect,
 		vUCreatePanelText(guiStyle, rect, vUPanelTextFormat_CenteredComplete,
 			tSize, text);
 	ptbutton->background =
-		vUCreatePanelButton(guiStyle, rect, NULL);
+		vUCreatePanelButton(guiStyle, rect, NULL, NULL);
 
 	return ptbutton;
 }
@@ -64,17 +64,6 @@ int main(int argc, char** argv) {
 			-0.015f,
 			NULL
 		);
-
-	// init preview style
-	vPUPanelStyle previewStyle = vUCreatePanelStyle(
-		vGCreateColorB(255, 255, 255, 255),
-		vGCreateColorB(0, 0, 0, 255),
-		vGCreateColorB(VGFX_COLOR_3b, 255),
-		0.010f,
-		0.01f,
-		-0.015f,
-		NULL
-	);
 
 	// make title
 	vPUPanel title =
@@ -123,7 +112,7 @@ int main(int argc, char** argv) {
 				0.25f
 			),
 			"Change Dir",
-			0.07fs
+			0.07f
 		);
 
 	PTButton compileFilesButton =
@@ -320,7 +309,7 @@ int main(int argc, char** argv) {
 				vPGSkin previewSkin = vGCreateSkinFromVCI(pathOut, FALSE, 0);
 				float aspect = (float)previewSkin->width / (float)previewSkin->height;
 				vPUPanel previewPanel =
-					vUCreatePanelRect(previewStyle,
+					vUCreatePanelRect(GUIStyle,
 						vUCreateRectCenteredOffset(
 							vCreatePosition(0, -0.25f), 0.75f * aspect, 0.75f),
 						previewSkin);
